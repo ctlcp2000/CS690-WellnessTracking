@@ -69,10 +69,35 @@ public class ConsoleUI {
 				                    new SelectionPrompt<string>()
 				                        .Title("What do you want to do?")
 				                        .AddChoices(new[] {
-				                            "show busiest stop","add stop","delete stop", "list stops", "end"
+				                            "add driver",
+                                            "delete driver",
+                                            "list drivers",
+                                            "add stop",
+                                            "delete stop",
+                                            "list stops",
+                                            "show busiest stop",
+                                            "end"
 				                        }));
 
-                if(command=="add stop") {
+                if(command=="add driver") {
+                    var newDriverName = AnsiConsole.Prompt(new TextPrompt<string>("Enter new driver name:"));
+                    dataManager.AddDriver(new Driver(newDriverName));
+                } else if(command=="delete driver") {
+                    Driver selectedDriver = AnsiConsole.Prompt(
+				            new SelectionPrompt<Driver>()
+				                .Title("Select a driver")
+				                .AddChoices(dataManager.Drivers));
+                    dataManager.RemoveDriver(selectedDriver);
+                } else if(command=="list drivers") {
+                    var table = new Table();
+                    table.AddColumn("Driver Name");
+
+                    foreach(var driver in dataManager.Drivers) {
+                        table.AddRow(driver.Name);
+                    }
+                    AnsiConsole.Write(table);
+                } 
+                else if(command=="add stop") {
                     var newStopName = AnsiConsole.Prompt(new TextPrompt<string>("Enter new stop name:"));
                     dataManager.AddStop(new Stop(newStopName));
                 } else if(command=="delete stop") {
