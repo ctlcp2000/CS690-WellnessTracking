@@ -1,4 +1,4 @@
-namespace BusShuttle;
+namespace WellessTracking;
 
 public class Stop {
     public string Name { get; }

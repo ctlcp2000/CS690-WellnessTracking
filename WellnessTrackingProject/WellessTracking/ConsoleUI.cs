@@ -1,4 +1,4 @@
-namespace BusShuttle;
+namespace WellessTracking;
 
 using Spectre.Console;
 

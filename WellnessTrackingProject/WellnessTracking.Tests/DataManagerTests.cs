@@ -1,6 +1,6 @@
-namespace BusShuttle.Tests;
+namespace WellessTracking.Tests;
 
-using BusShuttle;
+using WellessTracking;
 
 public class DataManagerTests
 {
