@@ -1,134 +1,127 @@
 namespace WellessTracking;
-
 using Spectre.Console;
 
 
-public class ConsoleUI {
-    DataManager dataManager;
+public class ConsoleUI
+{
+    DataManager DataManager;
 
-    public ConsoleUI() {
-        dataManager = new DataManager();
+    public ConsoleUI()
+    {
+        DataManager = new DataManager();
     }
 
-    public void Show() {
-        
+    public void Show()
+    {
         var mode = AnsiConsole.Prompt(
-				            new SelectionPrompt<string>()
-				                .Title("Please select mode")
-				                .AddChoices(new[] {
-				                    "driver","manager"
-				                }));
+            new SelectionPrompt<string>()
+            .Title("Please select mode")
+            .AddChoices(
+            [
+                "Enter Headache Occurrence",
+                "Print Headache Occurrence Report",
+                "Exit App"
+            ]));
 
 
-        if(mode=="driver") {
+        if (mode == "Enter Headache Occurrence")
+        {
+            while (true)
+            {
+                var finalDateTime = GetHeadacheDateTime("What was the [green]date[/] of your headache?", "What was the [green]time[/] of your headache?");
 
-            var selectedDriver = AnsiConsole.Prompt(
-				            new SelectionPrompt<Driver>()
-				                .Title("Select a driver")
-				                .AddChoices(dataManager.Drivers));
-            Console.WriteLine("Now you are driving as "+selectedDriver.Name);
+                if (AnsiConsole.Confirm($"Confirm headache occurrence at {finalDateTime}?"))
+                {
+                    var severity = GetHeadacheSeverity();
 
-
-            Loop selectedLoop = AnsiConsole.Prompt(
-				            new SelectionPrompt<Loop>()
-				                .Title("Select a loop")
-				                .AddChoices(dataManager.Loops));
-            Console.WriteLine("You selected "+selectedLoop.Name+" loop!");
-
-            string command;
-
-            do {
-                Stop selectedStop = AnsiConsole.Prompt(
-				            new SelectionPrompt<Stop>()
-				                .Title("Select a stop")
-				                .AddChoices(selectedLoop.Stops));
-                Console.WriteLine("You selected "+selectedStop.Name+" stop!");
-
-                int boarded = AnsiConsole.Prompt(new TextPrompt<int>("Enter number of boarded passengers:"));
-
-                PassengerData data = new PassengerData(boarded, selectedStop, selectedLoop, selectedDriver);
-
-                dataManager.AddNewPassengerData(data);
-
-                command = AnsiConsole.Prompt(
-				                    new SelectionPrompt<string>()
-				                        .Title("What's next?")
-				                        .AddChoices(new[] {
-				                            "continue","end"
-				                        }));
-
-
-            } while(command!="end");
-
-        } else if(mode=="manager") {
-
-            string command;
-            do {
-                
-                command = AnsiConsole.Prompt(
-				                    new SelectionPrompt<string>()
-				                        .Title("What do you want to do?")
-				                        .AddChoices(new[] {
-				                            "add driver",
-                                            "delete driver",
-                                            "list drivers",
-                                            "add stop",
-                                            "delete stop",
-                                            "list stops",
-                                            "show busiest stop",
-                                            "end"
-				                        }));
-
-                if(command=="add driver") {
-                    var newDriverName = AnsiConsole.Prompt(new TextPrompt<string>("Enter new driver name:"));
-                    dataManager.AddDriver(new Driver(newDriverName));
-                } else if(command=="delete driver") {
-                    Driver selectedDriver = AnsiConsole.Prompt(
-				            new SelectionPrompt<Driver>()
-				                .Title("Select a driver")
-				                .AddChoices(dataManager.Drivers));
-                    dataManager.RemoveDriver(selectedDriver);
-                } else if(command=="list drivers") {
-                    var table = new Table();
-                    table.AddColumn("Driver Name");
-
-                    foreach(var driver in dataManager.Drivers) {
-                        table.AddRow(driver.Name);
-                    }
-                    AnsiConsole.Write(table);
-                } 
-                else if(command=="add stop") {
-                    var newStopName = AnsiConsole.Prompt(new TextPrompt<string>("Enter new stop name:"));
-                    dataManager.AddStop(new Stop(newStopName));
-                } else if(command=="delete stop") {
-                    Stop selectedStop = AnsiConsole.Prompt(
-				            new SelectionPrompt<Stop>()
-				                .Title("Select a stop")
-				                .AddChoices(dataManager.Stops));
-                    dataManager.RemoveStop(selectedStop);
-                } else if(command=="list stops") {
-                    var table = new Table();
-
-                    table.AddColumn("Stop Name");
-
-                    foreach(var stop in dataManager.Stops) {
-                        table.AddRow(stop.Name);
-                    }
-                    AnsiConsole.Write(table);
-
-                } else if(command=="show busiest stop") {
-                    var result = Reporter.FindBusiestStop(dataManager.PassengerData);
-                    Console.WriteLine("The busiest stop is: "+result.Name);
+                    // store headache occurrence
+                    DataManager.AddHeadache(new HeadacheOccurence(finalDateTime, severity));
+                    AnsiConsole.Clear();
+                    Console.WriteLine("Headache occurrence saved");
+                    Show();
                 }
+                else if(AnsiConsole.Confirm("Do you want to re-enter the date and time?"))
+                {
+                    Console.WriteLine("Okay, try again.");
+                    continue;
+                }
+                else
+                {
+                    Console.WriteLine("Thanks!");
+                    System.Environment.Exit(0);
+                }
+            }
 
-
-            } while(command!="end");
-
+        }
+        else if (mode == "Print Headache Occurrence Report")
+        {
+            var headacheMinDate = GetHeadacheDateTime("What's is the minimum [green]date[/] of your headache report?", "What is is the minimum time [green]time[/] of your headache report?");
+            var headacheMaxDate = GetHeadacheDateTime("What's is the maximum [green]date[/] of your headache report?", "What is is the maximum time [green]time[/] of your headache report?");
+            var headacheReport = new HeadacheOccurenceReport(headacheMinDate, headacheMaxDate, DataManager);
+            AnsiConsole.Clear();
+            AnsiConsole.Write(headacheReport.GetReportString());
+            Show();
+        }
+        else if (mode == "Exit App")
+        {
+            Console.WriteLine("Goodbye");
+            System.Environment.Exit(0);
         }
     }
 
-    public static string AskForInput(string message) {
-        Console.Write(message);
-        return Console.ReadLine();
+    public static DateTime GetHeadacheDateTime(string datePrompt, string timePrompt)
+    {
+        DateTime headacheDate;
+        TimeOnly headacheTime;
+        AnsiConsole.Clear();
+
+        while (true)
+        {
+            var headacheDateString = AnsiConsole.Ask<string>($"{datePrompt} (yyyy-MM-dd format like 2025-05-01)");
+            if(!DateTime.TryParseExact(headacheDateString, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime headacheDateTemp))
+            {
+                Console.WriteLine("Invalid date format. Use yyyy-MM-dd format.");
+            }
+            else
+            {
+                headacheDate = headacheDateTemp;
+                break;
+            }
+        }
+        while (true)
+        {
+            var headacheTimeString = AnsiConsole.Ask<string>($"{timePrompt} (hh:mm tt format like 02:30 PM)");
+            if(!TimeOnly.TryParseExact(headacheTimeString, "hh:mm tt", null, System.Globalization.DateTimeStyles.None, out TimeOnly headacheTimeTemp))
+            {
+                Console.WriteLine("Invalid date format. Use hh:mm tt format.");
+            }
+            else
+            {
+                headacheTime = headacheTimeTemp;
+                break;
+            }
+        }
+        return headacheDate.Add(headacheTime.ToTimeSpan());
+    }
+
+    public static int GetHeadacheSeverity()
+    {
+        AnsiConsole.Clear();
+        var severity = AnsiConsole.Prompt(
+            new SelectionPrompt<int>()
+            .Title("Please select severity?")
+            .AddChoices(new[] 
+            {
+                1,2,3,4,5
+            }));
+
+        if(AnsiConsole.Confirm($"Confirm severity of {severity}?"))
+        {
+            return severity;
+        }
+        else
+        {
+            return GetHeadacheSeverity();
+        }
     }
 }
