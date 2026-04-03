@@ -80,10 +80,10 @@ public class HeadacheOccurenceReport : Report
     {
         var averageSeverity = GetAverageSeverity();
         var reportString = $"You had {HeadacheOccurenceList.Count} headaches between {MinDate} and {MaxDate}. The average severity was {averageSeverity}.\n\n";
-        return reportString;        
+        return reportString;
     }
 
-    private double GetAverageSeverity()
+    public double GetAverageSeverity()
     {
         if (HeadacheOccurenceList.Count == 0)
         {
@@ -119,14 +119,15 @@ public class PainMedicationReport : Report
 
 public class DataManager
 {
-
     FileSaver HeadachesFileSaver;
     public List<HeadacheOccurence> Headaches { get; }
+    public string HeadachesFileName { get; }
 
-    public DataManager()
+    public DataManager(string fileName = "headaches.txt")
     {
-        HeadachesFileSaver = new FileSaver("headaches.txt");
+        HeadachesFileSaver = new FileSaver(fileName);
         Headaches = new List<HeadacheOccurence>();
+        HeadachesFileName = fileName;
         foreach (var headache in HeadachesFileSaver.GetAllLines())
         {
             var parts = headache.Split(",");
@@ -138,7 +139,7 @@ public class DataManager
 
     public void SynchronizeHeadaches()
     {
-        File.Delete("headaches.txt");
+        File.Delete(HeadachesFileName);
         foreach (var headache in Headaches)
         {
             HeadachesFileSaver.AppendLine(headache.ToString());
@@ -148,6 +149,12 @@ public class DataManager
     public void AddHeadache(HeadacheOccurence headache)
     {
         Headaches.Add(headache);
+        SynchronizeHeadaches();
+    }
+
+    public void DeleteAllHeadaches()
+    {
+        Headaches.Clear();
         SynchronizeHeadaches();
     }
 
