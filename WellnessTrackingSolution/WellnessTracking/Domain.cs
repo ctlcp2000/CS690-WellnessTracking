@@ -111,12 +111,16 @@ public class PainMedicationReport : Report
 
     public override string GetReportString()
     {
+        var reportString = "";
         foreach (var headacheTreatment in HeadacheTreatmentList)
         {
-            var reportString = $"You took {headacheTreatment.Medication.Name} with dosage {headacheTreatment.Medication.Dosage} for a headache on {headacheTreatment.Headache.Date} with severity {headacheTreatment.Headache.Severity}.\n\n";
-            return reportString;
+            reportString += $"You took {headacheTreatment.Medication.Name} with dosage {headacheTreatment.Medication.Dosage} for a headache on {headacheTreatment.Headache.Date} with severity {headacheTreatment.Headache.Severity}.\n\n";
         }
-        return "No headache treatments in data range!";
+        if (HeadacheTreatmentList.Count == 0)
+        {
+            reportString = "No headache treatments in data range!";
+        }
+        return reportString;
     }
 }
 
@@ -150,8 +154,8 @@ public class DataManager
         {
             var parts = headacheTreatment.Split(",");
             var date = DateTime.Parse(parts[0]);
-            var medication = parts[1];
-            var dosage = int.Parse(parts[2]);
+            var medication = parts[2];
+            var dosage = int.Parse(parts[3]);
             HeadacheTreatments.Add(new HeadacheTreatment(GetHeadacheOccurrencesByDate(date, date).First(), new PainMedication(medication, dosage)));
         }
     }

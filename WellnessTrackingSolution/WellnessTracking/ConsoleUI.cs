@@ -62,10 +62,11 @@ public class ConsoleUI
 
     private void EnterHeadacheTreatment()
     {
+        AnsiConsole.Clear();
         while (true)
         {
             Console.WriteLine("Please enter the date and time of the headache you treated.");
-            var finalDateTime = GetHeadacheDateTime("What was the [green]date[/] of your headache treatment?", "What was the [green]time[/] of your headache treatment?");
+            var finalDateTime = GetHeadacheDateTime("What was the [green]date[/] of your headache treatment?", "What was the [green]time[/] of your headache treatment?", false);
 
             if (AnsiConsole.Confirm($"Confirm headache treatment at {finalDateTime}?"))
             {
@@ -73,7 +74,8 @@ public class ConsoleUI
 
                 if (headache == null)
                 {
-                    Console.WriteLine("No headache occurrence found at that date and time. Please enter a valid headache occurrence.");
+                    AnsiConsole.Clear();
+                    AnsiConsole.WriteLine("No headache occurrence found at that date and time. Please enter a valid headache occurrence.");
                     continue;
                 }
                 else
@@ -104,16 +106,19 @@ public class ConsoleUI
 
     private void PrintHeadacheOccurrenceReport()
     {
+        AnsiConsole.Clear();
         var headacheMinDate = GetHeadacheDateTime("What's is the minimum [green]date[/] of your headache report?", "What is is the minimum time [green]time[/] of your headache report?");
         var headacheMaxDate = GetHeadacheDateTime("What's is the maximum [green]date[/] of your headache report?", "What is is the maximum time [green]time[/] of your headache report?");
         var headacheReport = new HeadacheOccurenceReport(headacheMinDate, headacheMaxDate, DataManager);
         AnsiConsole.Clear();
-        AnsiConsole.Write(headacheReport.GetReportString());
+        var reportString = new Panel(headacheReport.GetReportString());
+        AnsiConsole.Write(reportString);
         Show();
     }
 
     private void EnterHeadacheOccurrence()
     {
+        AnsiConsole.Clear();
         while (true)
         {
             var finalDateTime = GetHeadacheDateTime("What was the [green]date[/] of your headache?", "What was the [green]time[/] of your headache?");
@@ -141,11 +146,14 @@ public class ConsoleUI
         }
     }
 
-    public static DateTime GetHeadacheDateTime(string datePrompt, string timePrompt)
+    public static DateTime GetHeadacheDateTime(string datePrompt, string timePrompt, bool clearConsole = true)
     {
         DateTime headacheDate;
         TimeOnly headacheTime;
-        AnsiConsole.Clear();
+        if (clearConsole)
+        {
+            AnsiConsole.Clear();
+        }
 
         while (true)
         {
@@ -165,6 +173,7 @@ public class ConsoleUI
             var headacheTimeString = AnsiConsole.Ask<string>($"{timePrompt} (hh:mm tt format like 02:30 PM)");
             if(!TimeOnly.TryParseExact(headacheTimeString, "hh:mm tt", null, System.Globalization.DateTimeStyles.None, out TimeOnly headacheTimeTemp))
             {
+                AnsiConsole.Clear();
                 Console.WriteLine("Invalid date format. Use hh:mm tt format.");
             }
             else
