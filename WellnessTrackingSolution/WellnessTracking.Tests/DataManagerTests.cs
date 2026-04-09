@@ -8,7 +8,7 @@ public class DataManagerTests
 
     public DataManagerTests() 
     {
-        dataManager = new DataManager("test-headaches2.txt");
+        dataManager = new DataManager();
     }
 
     [Fact]

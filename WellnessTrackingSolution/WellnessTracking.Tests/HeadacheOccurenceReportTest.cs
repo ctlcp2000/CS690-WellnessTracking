@@ -8,7 +8,7 @@ public class HeadacheOccurenceReportTest
 
     public HeadacheOccurenceReportTest()
     {
-        dataManager = new DataManager("test-headaches.txt");
+        dataManager = new DataManager();
     }
 
     [Fact]

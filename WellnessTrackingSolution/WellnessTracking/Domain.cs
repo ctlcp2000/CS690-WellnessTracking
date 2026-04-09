@@ -102,18 +102,21 @@ public class HeadacheOccurenceReport : Report
 
 public class PainMedicationReport : Report
 {
-    // public List<PainMedication> PainMedicationList { get; set; }
+    public List<HeadacheTreatment> HeadacheTreatmentList { get; set; }
 
     public PainMedicationReport(DateTime minDate, DateTime maxDate, DataManager dataManager) : base(minDate, maxDate, dataManager)
     {
-        // TODO: add this
-        // PainMedicationList = painMedicationList;
+        HeadacheTreatmentList = DataManager.GetHeadacheTreatmentsByDate(minDate, maxDate);
     }
 
     public override string GetReportString()
     {
-        // todo
-        return "";
+        foreach (var headacheTreatment in HeadacheTreatmentList)
+        {
+            var reportString = $"You took {headacheTreatment.Medication.Name} with dosage {headacheTreatment.Medication.Dosage} for a headache on {headacheTreatment.Headache.Date} with severity {headacheTreatment.Headache.Severity}.\n\n";
+            return reportString;
+        }
+        return "No headache treatments in data range!";
     }
 }
 
@@ -123,17 +126,33 @@ public class DataManager
     public List<HeadacheOccurence> Headaches { get; }
     public string HeadachesFileName { get; }
 
-    public DataManager(string fileName = "headaches.txt")
+    FileSaver HeadacheTreatmentFileSaver;
+    public List<HeadacheTreatment> HeadacheTreatments { get; }
+    public string HeadacheTreatmentFileName { get; }
+
+    public DataManager()
     {
-        HeadachesFileSaver = new FileSaver(fileName);
+        HeadachesFileName = "headaches.txt";
+        HeadachesFileSaver = new FileSaver(HeadachesFileName);
         Headaches = new List<HeadacheOccurence>();
-        HeadachesFileName = fileName;
         foreach (var headache in HeadachesFileSaver.GetAllLines())
         {
             var parts = headache.Split(",");
             var date = DateTime.Parse(parts[0]);
             var severity = int.Parse(parts[1]);
             Headaches.Add(new HeadacheOccurence(date, severity));
+        }
+
+        HeadacheTreatmentFileName = "headache-treatments.txt";
+        HeadacheTreatmentFileSaver = new FileSaver(HeadacheTreatmentFileName);
+        HeadacheTreatments = new List<HeadacheTreatment>();
+        foreach (var headacheTreatment in HeadacheTreatmentFileSaver.GetAllLines())
+        {
+            var parts = headacheTreatment.Split(",");
+            var date = DateTime.Parse(parts[0]);
+            var medication = parts[1];
+            var dosage = int.Parse(parts[2]);
+            HeadacheTreatments.Add(new HeadacheTreatment(GetHeadacheOccurrencesByDate(date, date).First(), new PainMedication(medication, dosage)));
         }
     }
 
@@ -161,5 +180,31 @@ public class DataManager
     public List<HeadacheOccurence> GetHeadacheOccurrencesByDate(DateTime minDate, DateTime maxDate)
     {
         return Headaches.Where(h => h.Date >= minDate && h.Date <= maxDate).ToList();
+    }
+
+    public void SynchronizeHeadacheTreatments()
+    {
+        File.Delete(HeadacheTreatmentFileName);
+        foreach (var headacheTreatment in HeadacheTreatments)
+        {
+            HeadacheTreatmentFileSaver.AppendLine(headacheTreatment.ToString());
+        }
+    }
+    
+    public void AddHeadacheTreatment(HeadacheTreatment headacheTreatment)
+    {
+        HeadacheTreatments.Add(headacheTreatment);
+        SynchronizeHeadacheTreatments();
+    }
+
+    public void DeleteAllHeadacheTreatments()
+    {
+        HeadacheTreatments.Clear();
+        SynchronizeHeadacheTreatments();
+    }
+
+    public List<HeadacheTreatment> GetHeadacheTreatmentsByDate(DateTime minDate, DateTime maxDate)
+    {
+        return HeadacheTreatments.Where(h => h.Headache.Date >= minDate && h.Headache.Date <= maxDate).ToList();
     }
 }

@@ -1,5 +1,6 @@
 namespace WellessTracking;
 using Spectre.Console;
+using System.Linq;
 
 
 public class ConsoleUI
@@ -20,52 +21,123 @@ public class ConsoleUI
             [
                 "Enter Headache Occurrence",
                 "Print Headache Occurrence Report",
+                "Enter Headache Treatment",
+                "Print Pain Medication Report",
                 "Exit App"
             ]));
 
 
         if (mode == "Enter Headache Occurrence")
         {
-            while (true)
-            {
-                var finalDateTime = GetHeadacheDateTime("What was the [green]date[/] of your headache?", "What was the [green]time[/] of your headache?");
-
-                if (AnsiConsole.Confirm($"Confirm headache occurrence at {finalDateTime}?"))
-                {
-                    var severity = GetHeadacheSeverity();
-
-                    // store headache occurrence
-                    DataManager.AddHeadache(new HeadacheOccurence(finalDateTime, severity));
-                    AnsiConsole.Clear();
-                    Console.WriteLine("Headache occurrence saved");
-                    Show();
-                }
-                else if(AnsiConsole.Confirm("Do you want to re-enter the date and time?"))
-                {
-                    Console.WriteLine("Okay, try again.");
-                    continue;
-                }
-                else
-                {
-                    Console.WriteLine("Thanks!");
-                    System.Environment.Exit(0);
-                }
-            }
-
+            EnterHeadacheOccurrence();
+        }
+        else if (mode == "Enter Headache Treatment")
+        {
+            EnterHeadacheTreatment();
         }
         else if (mode == "Print Headache Occurrence Report")
         {
-            var headacheMinDate = GetHeadacheDateTime("What's is the minimum [green]date[/] of your headache report?", "What is is the minimum time [green]time[/] of your headache report?");
-            var headacheMaxDate = GetHeadacheDateTime("What's is the maximum [green]date[/] of your headache report?", "What is is the maximum time [green]time[/] of your headache report?");
-            var headacheReport = new HeadacheOccurenceReport(headacheMinDate, headacheMaxDate, DataManager);
-            AnsiConsole.Clear();
-            AnsiConsole.Write(headacheReport.GetReportString());
-            Show();
+            PrintHeadacheOccurrenceReport();
+        }
+        else if(mode == "Print Pain Medication Report")
+        {
+            PrintPainMedicationReport();
         }
         else if (mode == "Exit App")
         {
             Console.WriteLine("Goodbye");
             System.Environment.Exit(0);
+        }
+    }
+
+    private void PrintPainMedicationReport()
+    {
+        var headacheMinDate = GetHeadacheDateTime("What's is the minimum [green]date[/] of your pain medication report?", "What is is the minimum time [green]time[/] of your pain medication report?");
+        var headacheMaxDate = GetHeadacheDateTime("What's is the maximum [green]date[/] of your pain medication report?", "What is is the maximum time [green]time[/] of your pain medication report?");
+        var painMedicationReport = new PainMedicationReport(headacheMinDate, headacheMaxDate, DataManager);
+        AnsiConsole.Clear();
+        AnsiConsole.Write(painMedicationReport.GetReportString());
+        Show();
+    }
+
+    private void EnterHeadacheTreatment()
+    {
+        while (true)
+        {
+            Console.WriteLine("Please enter the date and time of the headache you treated.");
+            var finalDateTime = GetHeadacheDateTime("What was the [green]date[/] of your headache treatment?", "What was the [green]time[/] of your headache treatment?");
+
+            if (AnsiConsole.Confirm($"Confirm headache treatment at {finalDateTime}?"))
+            {
+                var headache = DataManager.GetHeadacheOccurrencesByDate(finalDateTime, finalDateTime).FirstOrDefault();
+
+                if (headache == null)
+                {
+                    Console.WriteLine("No headache occurrence found at that date and time. Please enter a valid headache occurrence.");
+                    continue;
+                }
+                else
+                {
+                    var medication = AnsiConsole.Ask<string>("What medication did you take for this headache?");
+                    var dosage = GetDosage();
+                    var headacheTreatment = new HeadacheTreatment(headache, new PainMedication(medication, dosage));
+
+                    // store headache treatment
+                    DataManager.AddHeadacheTreatment(headacheTreatment);
+                    AnsiConsole.Clear();
+                    Console.WriteLine("Headache treatment saved");
+                    Show();
+                }
+            }
+            else if(AnsiConsole.Confirm("Do you want to re-enter the date and time?"))
+            {
+                Console.WriteLine("Okay, try again.");
+                continue;
+            }
+            else
+            {
+                Console.WriteLine("Thanks!");
+                System.Environment.Exit(0);
+            }
+        }
+    }
+
+    private void PrintHeadacheOccurrenceReport()
+    {
+        var headacheMinDate = GetHeadacheDateTime("What's is the minimum [green]date[/] of your headache report?", "What is is the minimum time [green]time[/] of your headache report?");
+        var headacheMaxDate = GetHeadacheDateTime("What's is the maximum [green]date[/] of your headache report?", "What is is the maximum time [green]time[/] of your headache report?");
+        var headacheReport = new HeadacheOccurenceReport(headacheMinDate, headacheMaxDate, DataManager);
+        AnsiConsole.Clear();
+        AnsiConsole.Write(headacheReport.GetReportString());
+        Show();
+    }
+
+    private void EnterHeadacheOccurrence()
+    {
+        while (true)
+        {
+            var finalDateTime = GetHeadacheDateTime("What was the [green]date[/] of your headache?", "What was the [green]time[/] of your headache?");
+
+            if (AnsiConsole.Confirm($"Confirm headache occurrence at {finalDateTime}?"))
+            {
+                var severity = GetHeadacheSeverity();
+
+                // store headache occurrence
+                DataManager.AddHeadache(new HeadacheOccurence(finalDateTime, severity));
+                AnsiConsole.Clear();
+                Console.WriteLine("Headache occurrence saved");
+                Show();
+            }
+            else if(AnsiConsole.Confirm("Do you want to re-enter the date and time?"))
+            {
+                Console.WriteLine("Okay, try again.");
+                continue;
+            }
+            else
+            {
+                Console.WriteLine("Thanks!");
+                System.Environment.Exit(0);
+            }
         }
     }
 
@@ -122,6 +194,27 @@ public class ConsoleUI
         else
         {
             return GetHeadacheSeverity();
+        }
+    }
+
+    public static int GetDosage()
+    {
+        AnsiConsole.Clear();
+        var dosage = AnsiConsole.Prompt(
+            new SelectionPrompt<int>()
+            .Title("Please select dosage?")
+            .AddChoices(new[] 
+            {
+                10,20,30,40,50
+            }));
+
+        if(AnsiConsole.Confirm($"Confirm dosage of {dosage}?"))
+        {
+            return dosage;
+        }
+        else
+        {
+            return GetDosage();
         }
     }
 }
